@@ -1,21 +1,16 @@
 import Footer from '@/components/Footer';
 // import { login } from '@/services/ant-design-pro/api';
 import {
-  LockOutlined,
-  MobileOutlined,
-  UserOutlined,
-} from '@ant-design/icons';
-import {
-  LoginForm,
-  ProFormCaptcha,
-  ProFormText,
-} from '@ant-design/pro-components';
+userLoginByEmailGetCodeUsingGET,
+userRegisterUsingPOST
+} from '@/services/fragmentation-backend/userController';
+import { LockOutlined,MailOutlined,UserOutlined } from '@ant-design/icons';
+import { LoginForm,ProFormCaptcha,ProFormText } from '@ant-design/pro-components';
 import { useEmotionCss } from '@ant-design/use-emotion-css';
-import { Helmet, history, useModel } from '@umijs/max';
-import { Alert, message, Tabs } from 'antd';
-import React, { useState } from 'react';
+import { Helmet,history } from '@umijs/max';
+import { Alert,message,Tabs } from 'antd';
+import React,{ useState } from 'react';
 import Settings from '../../../../config/defaultSettings';
-import {userLoginBYAccountUsingPOST} from "@/services/fragmentation-backend/userController";
 
 const LoginMessage: React.FC<{
   content: string;
@@ -31,10 +26,9 @@ const LoginMessage: React.FC<{
     />
   );
 };
-const Login: React.FC = () => {
+const Register: React.FC = () => {
   const [userLoginState] = useState<API.LoginResult>({});
   const [type, setType] = useState<string>('account');
-  const { initialState, setInitialState } = useModel('@@initialState');
   const containerClassName = useEmotionCss(() => {
     return {
       display: 'flex',
@@ -46,36 +40,51 @@ const Login: React.FC = () => {
       backgroundSize: '100% 100%',
     };
   });
-  const handleSubmit = async (values: API.UserLoginRequest) => {
+  /**
+   * 获取邮箱验证码
+   */
+  const handleGetCaptcha = async (userEmail:string) => {
+    console.log(userEmail)
+    try {
+      // 模拟成功获取验证码的情况
+      // 这里假设调用 getFakeCaptcha 并传递邮箱参数来获取验证码
+      const result = await userLoginByEmailGetCodeUsingGET({
+        email: userEmail,
+        encode: '1',
+      });
+      if (result.message === 'ok') {
+        message.success('获取验证码成功！'); // 显示获取验证码成功的消息
+      }
+    } catch (error) {
+      // 获取验证码失败的情况
+      message.error('获取验证码失败，请重试！');
+    }
+  };
+  const handleSubmit = async (values: API.UserRegisterRequest) => {
     try {
       // 登录
-      const msg = await userLoginBYAccountUsingPOST({
+      const msg = await userRegisterUsingPOST({
         ...values,
       });
       if (msg.message === 'ok') {
-        const defaultLoginSuccessMessage = '登录成功！';
+        const defaultLoginSuccessMessage = '注册成功！';
         message.success(defaultLoginSuccessMessage);
-        const urlParams  = new URL(window.location.href).searchParams;
-        history.push(urlParams.get('redirect') || '/');
-        setInitialState({
-          loginUser:msg.data
-        });
-        console.log(initialState)
+        history.push('/user/login');
         return;
       }
-
     } catch (error) {
-      const defaultLoginFailureMessage = '登录失败，请重试！';
+      const defaultLoginFailureMessage = '注册失败，请重试！';
       console.log(error);
       message.error(defaultLoginFailureMessage);
     }
   };
+  // TODO 获取验证码的方法
   const { status, type: loginType } = userLoginState;
   return (
     <div className={containerClassName}>
       <Helmet>
         <title>
-          {'登录'}- {Settings.title}
+          {'注册'}- {Settings.title}
         </title>
       </Helmet>
       <div
@@ -85,13 +94,18 @@ const Login: React.FC = () => {
         }}
       >
         <LoginForm
+          submitter={{
+            searchConfig: {
+              submitText: '注册',
+            },
+          }}
           contentStyle={{
             minWidth: 280,
             maxWidth: '75vw',
           }}
           logo={<img alt="logo" src="/logo.svg" />}
           title="ZYAPI 开放平台"
-          subTitle={'Welcome toZYAPI'}
+          subTitle={'Welcome to ZYAPI'}
           initialValues={{
             autoLogin: true,
           }}
@@ -106,11 +120,7 @@ const Login: React.FC = () => {
             items={[
               {
                 key: 'account',
-                label: '账户密码登录',
-              },
-              {
-                key: 'mobile',
-                label: '手机号登录',
+                label: '注册',
               },
             ]}
           />
@@ -126,7 +136,7 @@ const Login: React.FC = () => {
                   size: 'large',
                   prefix: <UserOutlined />,
                 }}
-                placeholder={'用户名: admin or user'}
+                placeholder={'用户名'}
                 rules={[
                   {
                     required: true,
@@ -140,7 +150,7 @@ const Login: React.FC = () => {
                   size: 'large',
                   prefix: <LockOutlined />,
                 }}
-                placeholder={'密码: ant.design'}
+                placeholder={'密码'}
                 rules={[
                   {
                     required: true,
@@ -148,30 +158,42 @@ const Login: React.FC = () => {
                   },
                 ]}
               />
-            </>
-          )}
-
-          {status === 'error' && loginType === 'mobile' && <LoginMessage content="验证码错误" />}
-          {type === 'mobile' && (
-            <>
-              <ProFormText
+              <ProFormText.Password
+                name="checkPassword"
                 fieldProps={{
                   size: 'large',
-                  prefix: <MobileOutlined />,
+                  prefix: <LockOutlined />,
                 }}
-                name="mobile"
-                placeholder={'请输入手机号！'}
+                placeholder={'确认密码'}
                 rules={[
                   {
                     required: true,
-                    message: '手机号是必填项！',
+                    message: '密码是必填项！',
                   },
-                  {
-                    pattern: /^1\d{10}$/,
-                    message: '不合法的手机号！',
-                  },
+                  ({ getFieldValue }) => ({
+                    validator(_, value) {
+                      if (!value || getFieldValue('userPassword') === value) {
+                        return Promise.resolve();
+                      }
+                      return Promise.reject(new Error('两次输入的密码不一致！'));
+                    },
+                  }),
                 ]}
               />
+                <ProFormText
+                  name="userEmail"
+                  fieldProps={{
+                    size: 'large',
+                    prefix: <MailOutlined />,
+                  }}
+                  placeholder="邮箱"
+                  rules={[
+                    {
+                      // 邮箱是选填项
+                      required: false,
+                    },
+                  ]}
+                />
               <ProFormCaptcha
                 fieldProps={{
                   size: 'large',
@@ -180,10 +202,10 @@ const Login: React.FC = () => {
                 captchaProps={{
                   size: 'large',
                 }}
-                placeholder={'请输入验证码！'}
+                placeholder="请输入验证码！"
                 captchaTextRender={(timing, count) => {
                   if (timing) {
-                    return `${count} ${'秒后重新获取'}`;
+                    return `${count} 秒后重新获取`;
                   }
                   return '获取验证码';
                 }}
@@ -194,9 +216,8 @@ const Login: React.FC = () => {
                     message: '验证码是必填项！',
                   },
                 ]}
-                onGetCaptcha={async (mobile) => {
-                  alert(mobile)
-                  message.success('获取验证码成功！验证码为：1234');
+                onGetCaptcha={async ()=>{
+                  handleGetCaptcha("wangzhaoyiww@gmail.com")
                 }}
               />
             </>
@@ -208,27 +229,17 @@ const Login: React.FC = () => {
           >
             <a
               style={{
-                float: 'left',
-
-              }}
-              href={'/user/register'}
-            >
-              立即注册
-            </a>
-            <a
-              style={{
                 float: 'right',
               }}
-              href={'/user/register'}
+              href={'/user/login'}
             >
-              忘记密码 ?
+              返回 登录
             </a>
-
           </div>
         </LoginForm>
       </div>
-      <Footer/>
+      <Footer />
     </div>
   );
 };
-export default Login;
+export default Register;

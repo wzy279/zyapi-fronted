@@ -73,9 +73,10 @@ export default defineConfig({
    * @name layout 插件
    * @doc https://umijs.org/docs/max/layout-menu
    */
-  title: 'Ant Design Pro',
+  title: '碎片化复习系统',
   layout: {
-    locale: true,
+    locale: false,
+    layout: 'top',
     ...defaultSettings,
   },
   /**
@@ -129,8 +130,8 @@ export default defineConfig({
   openAPI: [
     {
       requestLibPath: "import { request } from '@umijs/max'",
-      schemaPath: 'http://localhost:8101/api//v2/api-docs',
-      projectName: 'zyapi-backend',
+      schemaPath: 'http://localhost:8279/api/v3/api-docs',
+      projectName: 'fragmentation-backend',
     },
   ],
   mfsu: {

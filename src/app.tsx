@@ -1,12 +1,12 @@
 import Footer from '@/components/Footer';
 import { Question } from '@/components/RightContent';
 import { LinkOutlined } from '@ant-design/icons';
-import { SettingDrawer } from '@ant-design/pro-components';
 import type { RunTimeLayoutConfig } from '@umijs/max';
 import { history, Link } from '@umijs/max';
 import { AvatarDropdown, AvatarName } from './components/RightContent/AvatarDropdown';
 import { requestConfig } from './requestConfig';
 import {getLoginUserUsingGET} from "@/services/zyapi-backend/userController";
+import defaultSettings from "../config/defaultSettings";
 const isDev = process.env.NODE_ENV === 'development';
 const loginPath = '/user/login';
 
@@ -80,6 +80,9 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
         ]
       : [],
     menuHeaderRender: undefined,
+    settings:{defaultSettings},
+    layout:'mix',
+    splitMenus:true,
     // 自定义 403 页面
     // unAccessible: <div>unAccessible</div>,
     // 增加一个 loading 的状态

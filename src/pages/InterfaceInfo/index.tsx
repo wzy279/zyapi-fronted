@@ -5,15 +5,16 @@ import {Button, Card, Descriptions, Form, message} from 'antd';
 import React, { useEffect, useState } from 'react';
 import TextArea from "antd/es/input/TextArea";
 import {addInterfaceInfoUsingPOST1} from "@/services/zyapi-backend/userInterfaceInfoController";
-
+import { CloseOutlined } from '@ant-design/icons';
+import {  Input, Space, Typography } from 'antd';
 const InterfaceInfo: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [Buttonloading, setButtonloading] = useState(false);
   const [invokeloading, setinvokeLoading] = useState(false);
   const [data, setData] = useState<API.InterfaceInfo>();
   const [invokeRes, setinvokeRes] = useState<API.InterfaceInfo>();
-
   const params = useParams();
+
 
   const loadData = async () => {
     if (!params.id) {
@@ -74,8 +75,10 @@ const InterfaceInfo: React.FC = () => {
   useEffect(() => {
     loadData();
   }, []);
-
+  const [form] = Form.useForm();
+  // @ts-ignore
   return (
+    <>
     <PageContainer title={'查看接口'} loading={loading}>
       {data ? (
         <Card>
@@ -86,6 +89,7 @@ const InterfaceInfo: React.FC = () => {
             <Descriptions.Item label="请求头">{data.requestHeader}</Descriptions.Item>
             <Descriptions.Item label="相应头">{data.responseHeader}</Descriptions.Item>
             <Descriptions.Item label="请求参数">{data.requestBody}</Descriptions.Item>
+            <Descriptions.Item label="请求参数"><pre style={{background:'#EBEBEB'}}>{JSON.stringify(JSON.parse(data.requestBody===undefined?"{}":data.requestBody),null,2)}</pre></Descriptions.Item>
             <Descriptions.Item label="返回响应">{data.responseBody}</Descriptions.Item>
             <Descriptions.Item label="接口状态">{data.status ?'开启':'关闭'}</Descriptions.Item>
             <Descriptions.Item label="创建时间">
@@ -94,6 +98,7 @@ const InterfaceInfo: React.FC = () => {
             <Descriptions.Item label="更新时间">
               {data.updateTime}
             </Descriptions.Item>
+
           </Descriptions>
         </Card>
       ) : (
@@ -122,9 +127,84 @@ const InterfaceInfo: React.FC = () => {
       </Form>
     </Card>
       <Card title={"返回结果"} loading={invokeloading}>
-        {invokeRes}
+        '11111'
       </Card>
+      <Form
+        labelCol={{ span: 6 }}
+        wrapperCol={{ span: 18 }}
+        form={form}
+        name="dynamic_form_complex"
+        style={{ maxWidth: 600 }}
+        autoComplete="off"
+        initialValues={{ items: [{}] }}
+      >
+        <Form.List name="items">
+          {(fields, { add, remove }) => (
+            <div style={{ display: 'flex', rowGap: 16, flexDirection: 'column' }}>
+              {fields.map((field) => (
+                <Card
+                  size="small"
+                  title={`Item ${field.name + 1}`}
+                  key={field.key}
+                  extra={
+                    <CloseOutlined
+                      onClick={() => {
+                        remove(field.name);
+                      }}
+                    />
+                  }
+                >
+                  <Form.Item label="Name" name={[field.name, 'name']}>
+                    <Input />
+                  </Form.Item>
+
+                  {/* Nest Form.List */}
+                  <Form.Item label="List">
+                    <Form.List name={[field.name, 'list']}>
+                      {(subFields, subOpt) => (
+                        <div style={{ display: 'flex', flexDirection: 'column', rowGap: 16 }}>
+                          {subFields.map((subField) => (
+                            <Space key={subField.key}>
+                              <Form.Item noStyle name={[subField.name, 'first']}>
+                                <Input placeholder="first" />
+                              </Form.Item>
+                              <Form.Item noStyle name={[subField.name, 'second']}>
+                                <Input placeholder="second" />
+                              </Form.Item>
+                              <CloseOutlined
+                                onClick={() => {
+                                  subOpt.remove(subField.name);
+                                }}
+                              />
+                            </Space>
+                          ))}
+                          <Button type="dashed" onClick={() => subOpt.add()} block>
+                            + Add Sub Item
+                          </Button>
+                        </div>
+                      )}
+                    </Form.List>
+                  </Form.Item>
+                </Card>
+              ))}
+
+              <Button type="dashed" onClick={() => add()} block>
+                + Add Item
+              </Button>
+            </div>
+          )}
+        </Form.List>
+
+        <Form.Item noStyle shouldUpdate>
+          {() => (
+            <Typography>
+              <pre>{JSON.stringify(form.getFieldsValue(), null, 2)}</pre>
+            </Typography>
+          )}
+        </Form.Item>
+      </Form>
     </PageContainer>
+    </>
   );
 };
 
